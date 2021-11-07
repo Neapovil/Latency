@@ -81,8 +81,6 @@ public final class Latency extends JavaPlugin
                     sender.sendMessage("%s's ping: %sms".formatted(target.getName(), latencies.getOrDefault(target.getUniqueId(), 0L)));
                 })
                 .register();
-
-        this.getLogger().severe(this.getDescription().getPermissions().toString());
     }
 
     @Override
