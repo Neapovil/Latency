@@ -1,0 +1,14 @@
+name: Latency
+main: com.github.neapovil.latency.Latency
+version: 1.0.0
+api-version: 1.13
+author: Neapovil
+website: https://github.com/Neapovil/Latency
+depend:
+  - CommandAPI
+  - PacketListenerApi
+permissions:
+  latency.command.self:
+    default: true
+  latency.command.other:
+    default: true
