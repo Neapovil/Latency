@@ -5,13 +5,12 @@ plugins {
 }
 
 version = '1.17.1'
-group = 'it.ancientrealms.rankup'
+group = 'com.github.neapovil.latency'
 compileJava.options.encoding = 'UTF-8'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(16)
 
 repositories {
-  maven { url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
   maven { url 'https://papermc.io/repo/repository/maven-public/' }
   maven { url 'https://jitpack.io' }
   maven { url 'https://repo.codemc.org/repository/maven-public/' }
@@ -19,7 +18,7 @@ repositories {
 }
 
 dependencies {
-  compileOnly group: 'org.spigotmc', name: 'spigot-api', version: '1.17.1-R0.1-SNAPSHOT'
+  compileOnly group: 'io.papermc.paper', name: 'paper-api', version: '1.17.1-R0.1-SNAPSHOT'
   compileOnly group: 'dev.jorel.CommandAPI', name: 'commandapi-core', version: '6.3.0'
   compileOnly group: 'org.inventivetalent.packetlistenerapi', name: 'api', version: '3.9.8-SNAPSHOT'
 }
