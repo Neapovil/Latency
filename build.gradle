@@ -4,11 +4,11 @@ plugins {
   id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
-version = '1.17.1'
+version = '1.18.1'
 group = 'com.github.neapovil.latency'
 compileJava.options.encoding = 'UTF-8'
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(16)
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 repositories {
   maven { url 'https://papermc.io/repo/repository/maven-public/' }
@@ -18,7 +18,7 @@ repositories {
 }
 
 dependencies {
-  compileOnly group: 'io.papermc.paper', name: 'paper-api', version: '1.17.1-R0.1-SNAPSHOT'
-  compileOnly group: 'dev.jorel.CommandAPI', name: 'commandapi-core', version: '6.3.0'
-  compileOnly group: 'org.inventivetalent.packetlistenerapi', name: 'api', version: '3.9.8-SNAPSHOT'
+  compileOnly group: 'io.papermc.paper', name: 'paper-api', version: '1.18.1-R0.1-SNAPSHOT'
+  compileOnly group: 'dev.jorel.CommandAPI', name: 'commandapi-core', version: '6.5.3'
+  compileOnly group: 'org.inventivetalent.packetlistenerapi', name: 'api', version: '3.9.9-SNAPSHOT'
 }

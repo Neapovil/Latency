@@ -74,11 +74,15 @@ public final class Latency extends JavaPlugin
                 .withArguments(new PlayerArgument("player")
                         .withPermission("latency.command.other")
                         .replaceSuggestions(info -> {
-                            return this.getServer().getOnlinePlayers().stream().map(p -> p.getName()).toArray(String[]::new);
+                            return this.getServer()
+                                    .getOnlinePlayers()
+                                    .stream()
+                                    .map(p -> p.getName())
+                                    .toArray(String[]::new);
                         }))
                 .executes((sender, args) -> {
                     final Player target = (Player) args[0];
-                    sender.sendMessage("%s's ping: %sms".formatted(target.getName(), latencies.getOrDefault(target.getUniqueId(), 0L)));
+                    sender.sendMessage(target.getName() + "'s ping: " + latencies.getOrDefault(target.getUniqueId(), 0L) + "ms");
                 })
                 .register();
     }
