@@ -63,14 +63,14 @@ public final class Latency extends JavaPlugin
             }
         });
 
-        new CommandAPICommand("ping")
+        new CommandAPICommand("latency")
                 .withPermission("latency.command.self")
                 .executesPlayer((player, args) -> {
                     player.sendMessage("Ping: " + latencies.getOrDefault(player.getUniqueId(), 0L) + "ms");
                 })
                 .register();
 
-        new CommandAPICommand("ping")
+        new CommandAPICommand("latency")
                 .withArguments(new PlayerArgument("player")
                         .withPermission("latency.command.other")
                         .replaceSuggestions(info -> {
