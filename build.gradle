@@ -13,12 +13,11 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 repositories {
   maven { url 'https://papermc.io/repo/repository/maven-public/' }
   maven { url 'https://jitpack.io' }
-  maven { url 'https://repo.codemc.org/repository/maven-public/' }
   mavenCentral()
 }
 
 dependencies {
   compileOnly group: 'io.papermc.paper', name: 'paper-api', version: '1.18.1-R0.1-SNAPSHOT'
-  compileOnly group: 'dev.jorel.CommandAPI', name: 'commandapi-core', version: '6.5.3'
+  compileOnly group: 'dev.jorel.CommandAPI', name: 'commandapi-core', version: '7.0.0'
   compileOnly group: 'org.inventivetalent.packetlistenerapi', name: 'api', version: '3.9.9-SNAPSHOT'
 }

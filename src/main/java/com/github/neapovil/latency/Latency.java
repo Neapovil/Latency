@@ -14,6 +14,7 @@ import org.inventivetalent.packetlistener.handler.ReceivedPacket;
 import org.inventivetalent.packetlistener.handler.SentPacket;
 
 import dev.jorel.commandapi.CommandAPICommand;
+import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import dev.jorel.commandapi.arguments.PlayerArgument;
 
 public final class Latency extends JavaPlugin
@@ -73,13 +74,13 @@ public final class Latency extends JavaPlugin
         new CommandAPICommand("latency")
                 .withArguments(new PlayerArgument("player")
                         .withPermission("latency.command.other")
-                        .replaceSuggestions(info -> {
+                        .replaceSuggestions(ArgumentSuggestions.strings(info -> {
                             return this.getServer()
                                     .getOnlinePlayers()
                                     .stream()
                                     .map(p -> p.getName())
                                     .toArray(String[]::new);
-                        }))
+                        })))
                 .executes((sender, args) -> {
                     final Player target = (Player) args[0];
                     sender.sendMessage(target.getName() + "'s ping: " + latencies.getOrDefault(target.getUniqueId(), 0L) + "ms");
