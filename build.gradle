@@ -1,6 +1,5 @@
 plugins {
   id 'java-library'
-  id 'eclipse'
   id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
@@ -20,4 +19,14 @@ dependencies {
   compileOnly group: 'io.papermc.paper', name: 'paper-api', version: '1.18.1-R0.1-SNAPSHOT'
   compileOnly group: 'dev.jorel.CommandAPI', name: 'commandapi-core', version: '7.0.0'
   compileOnly group: 'org.inventivetalent.packetlistenerapi', name: 'api', version: '3.9.9-SNAPSHOT'
+  compileOnly group: 'net.kyori', name: 'adventure-text-minimessage', version: '4.10.1'
+  
+  implementation group: 'com.electronwill.night-config', name:'json', version: '3.6.5'
 }
+
+shadowJar {
+  classifier ''
+  relocate 'com.electronwill.nightconfig', 'com.github.neapovil.elevators.nightconfig'
+}
+
+build.dependsOn shadowJar

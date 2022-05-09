@@ -1,5 +1,6 @@
 package com.github.neapovil.latency;
 
+import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -13,19 +14,35 @@ import org.inventivetalent.packetlistener.handler.PacketHandler;
 import org.inventivetalent.packetlistener.handler.ReceivedPacket;
 import org.inventivetalent.packetlistener.handler.SentPacket;
 
+import com.electronwill.nightconfig.core.file.FileConfig;
+
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 
 public final class Latency extends JavaPlugin
 {
     private static Latency instance;
     private final Map<UUID, Instant> calculating = new HashMap<>();
     private final Map<UUID, Long> latencies = new HashMap<>();
+    private FileConfig messages;
+    private final MiniMessage miniMessage = MiniMessage.miniMessage();
 
     @Override
     public void onEnable()
     {
         instance = this;
+
+        this.saveResource("messages.json", false);
+
+        this.messages = FileConfig.builder(new File(this.getDataFolder(), "messages.json"))
+                .autoreload()
+                .autosave()
+                .build();
+
+        this.messages.load();
 
         PacketListenerAPI.addPacketHandler(new PacketHandler(this) {
             @Override
@@ -67,16 +84,25 @@ public final class Latency extends JavaPlugin
         new CommandAPICommand("latency")
                 .withPermission("latency.command.self")
                 .executesPlayer((player, args) -> {
-                    player.sendMessage("Ping: " + latencies.getOrDefault(player.getUniqueId(), 0L) + "ms");
+                    final long ms = this.latencies.getOrDefault(player.getUniqueId(), 0L);
+                    final String message = this.messages.get("messages.self");
+                    final Component component = this.miniMessage.deserialize(message, Placeholder.parsed("ms", "" + ms));
+
+                    player.sendMessage(component);
                 })
                 .register();
 
         new CommandAPICommand("latency")
+                .withPermission("latency.command.self")
                 .withArguments(new EntitySelectorArgument("player", EntitySelectorArgument.EntitySelector.ONE_PLAYER).withPermission("latency.command.other"))
                 .executes((sender, args) -> {
                     final Player target = (Player) args[0];
+                    final String message = this.messages.get("messages.other");
+                    final long ms = this.latencies.getOrDefault(target.getUniqueId(), 0L);
+                    final Component component = this.miniMessage.deserialize(message, Placeholder.parsed("player_name", target.getName()),
+                            Placeholder.parsed("ms", "" + ms));
 
-                    sender.sendMessage(target.getName() + "'s ping: " + latencies.getOrDefault(target.getUniqueId(), 0L) + "ms");
+                    sender.sendMessage(component);
                 })
                 .register();
     }
@@ -91,8 +117,8 @@ public final class Latency extends JavaPlugin
         return instance;
     }
 
-    public Map<UUID, Long> getLatencies()
+    public Long getPlayerLatency(UUID uuid)
     {
-        return this.latencies;
+        return this.latencies.get(uuid);
     }
 }
