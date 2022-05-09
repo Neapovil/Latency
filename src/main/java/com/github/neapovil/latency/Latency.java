@@ -14,8 +14,7 @@ import org.inventivetalent.packetlistener.handler.ReceivedPacket;
 import org.inventivetalent.packetlistener.handler.SentPacket;
 
 import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.PlayerArgument;
+import dev.jorel.commandapi.arguments.EntitySelectorArgument;
 
 public final class Latency extends JavaPlugin
 {
@@ -37,7 +36,7 @@ public final class Latency extends JavaPlugin
                     return;
                 }
 
-                if (packet.getPlayer() == null)
+                if (!packet.hasPlayer())
                 {
                     return;
                 }
@@ -53,13 +52,14 @@ public final class Latency extends JavaPlugin
                     return;
                 }
 
-                if (packet.getPlayer() == null)
+                if (!packet.hasPlayer())
                 {
                     return;
                 }
 
                 final Instant now = Instant.now();
                 final Instant before = calculating.remove(packet.getPlayer().getUniqueId());
+
                 latencies.put(packet.getPlayer().getUniqueId(), Duration.between(before, now).toMillis());
             }
         });
@@ -72,17 +72,10 @@ public final class Latency extends JavaPlugin
                 .register();
 
         new CommandAPICommand("latency")
-                .withArguments(new PlayerArgument("player")
-                        .withPermission("latency.command.other")
-                        .replaceSuggestions(ArgumentSuggestions.strings(info -> {
-                            return this.getServer()
-                                    .getOnlinePlayers()
-                                    .stream()
-                                    .map(p -> p.getName())
-                                    .toArray(String[]::new);
-                        })))
+                .withArguments(new EntitySelectorArgument("player", EntitySelectorArgument.EntitySelector.ONE_PLAYER).withPermission("latency.command.other"))
                 .executes((sender, args) -> {
                     final Player target = (Player) args[0];
+
                     sender.sendMessage(target.getName() + "'s ping: " + latencies.getOrDefault(target.getUniqueId(), 0L) + "ms");
                 })
                 .register();
