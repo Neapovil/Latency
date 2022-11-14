@@ -1,31 +1,36 @@
 package com.github.neapovil.latency;
 
-import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.inventivetalent.packetlistener.PacketListenerAPI;
-import org.inventivetalent.packetlistener.handler.PacketHandler;
-import org.inventivetalent.packetlistener.handler.ReceivedPacket;
-import org.inventivetalent.packetlistener.handler.SentPacket;
 
 import com.electronwill.nightconfig.core.file.FileConfig;
 
 import dev.jorel.commandapi.CommandAPICommand;
+import dev.jorel.commandapi.arguments.EntitySelector;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.minecraft.network.protocol.game.ClientboundKeepAlivePacket;
+import net.minecraft.network.protocol.game.ServerboundKeepAlivePacket;
 
-public final class Latency extends JavaPlugin
+public final class Latency extends JavaPlugin implements Listener
 {
     private static Latency instance;
-    private final Map<UUID, Instant> calculating = new HashMap<>();
     private final Map<UUID, Long> latencies = new HashMap<>();
     private FileConfig messages;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
@@ -37,49 +42,14 @@ public final class Latency extends JavaPlugin
 
         this.saveResource("messages.json", false);
 
-        this.messages = FileConfig.builder(new File(this.getDataFolder(), "messages.json"))
+        this.messages = FileConfig.builder(this.getDataFolder().toPath().resolve("messages.json"))
                 .autoreload()
                 .autosave()
                 .build();
 
         this.messages.load();
 
-        PacketListenerAPI.addPacketHandler(new PacketHandler(this) {
-            @Override
-            public void onSend(SentPacket packet)
-            {
-                if (!packet.getPacketName().equals("PacketPlayOutKeepAlive"))
-                {
-                    return;
-                }
-
-                if (!packet.hasPlayer())
-                {
-                    return;
-                }
-
-                calculating.put(packet.getPlayer().getUniqueId(), Instant.now());
-            }
-
-            @Override
-            public void onReceive(ReceivedPacket packet)
-            {
-                if (!packet.getPacketName().equals("PacketPlayInKeepAlive"))
-                {
-                    return;
-                }
-
-                if (!packet.hasPlayer())
-                {
-                    return;
-                }
-
-                final Instant now = Instant.now();
-                final Instant before = calculating.remove(packet.getPlayer().getUniqueId());
-
-                latencies.put(packet.getPlayer().getUniqueId(), Duration.between(before, now).toMillis());
-            }
-        });
+        this.getServer().getPluginManager().registerEvents(this, this);
 
         new CommandAPICommand("latency")
                 .withPermission("latency.command.self")
@@ -94,9 +64,10 @@ public final class Latency extends JavaPlugin
 
         new CommandAPICommand("latency")
                 .withPermission("latency.command.self")
-                .withArguments(new EntitySelectorArgument("player", EntitySelectorArgument.EntitySelector.ONE_PLAYER).withPermission("latency.command.other"))
+                .withArguments(new EntitySelectorArgument<Player>("player", EntitySelector.ONE_PLAYER).withPermission("latency.command.other"))
                 .executes((sender, args) -> {
                     final Player target = (Player) args[0];
+
                     final String message = this.messages.get("messages.other");
                     final long ms = this.latencies.getOrDefault(target.getUniqueId(), 0L);
                     final Component component = this.miniMessage.deserialize(message, Placeholder.parsed("player_name", target.getName()),
@@ -117,8 +88,56 @@ public final class Latency extends JavaPlugin
         return instance;
     }
 
-    public Long getPlayerLatency(UUID uuid)
+    public long getPlayerLatency(UUID uuid)
     {
-        return this.latencies.get(uuid);
+        return this.latencies.getOrDefault(uuid, 0L);
+    }
+
+    @EventHandler
+    private void playerJoin(PlayerJoinEvent event)
+    {
+        final CraftPlayer craftplayer = (CraftPlayer) event.getPlayer();
+
+        craftplayer.getHandle().networkManager.channel.pipeline()
+                .addBefore("packet_handler", craftplayer.getName(), new CustomHandler(craftplayer.getUniqueId()));
+    }
+
+    @EventHandler
+    private void playerQuit(PlayerQuitEvent event)
+    {
+        this.latencies.remove(event.getPlayer().getUniqueId());
+    }
+
+    class CustomHandler extends ChannelDuplexHandler
+    {
+        private final UUID uuid;
+        private Instant before;
+
+        public CustomHandler(UUID uuid)
+        {
+            this.uuid = uuid;
+        }
+
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception
+        {
+            if (msg instanceof ServerboundKeepAlivePacket)
+            {
+                latencies.put(this.uuid, Duration.between(this.before, Instant.now()).toMillis());
+            }
+
+            super.channelRead(ctx, msg);
+        }
+
+        @Override
+        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception
+        {
+            if (msg instanceof ClientboundKeepAlivePacket)
+            {
+                this.before = Instant.now();
+            }
+
+            super.write(ctx, msg, promise);
+        }
     }
 }

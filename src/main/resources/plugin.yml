@@ -3,11 +3,9 @@ main: com.github.neapovil.latency.Latency
 version: 1.0.0
 api-version: 1.13
 author: Neapovil
-website: https://github.com/Neapovil/Latency
-description: Check player latency
+website: https://github.com/Neapovil/latency
 depend:
   - CommandAPI
-  - PacketListenerApi
 permissions:
   latency.command.self:
     default: true
