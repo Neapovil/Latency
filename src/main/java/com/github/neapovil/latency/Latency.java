@@ -96,10 +96,8 @@ public final class Latency extends JavaPlugin implements Listener
     @EventHandler
     private void playerJoin(PlayerJoinEvent event)
     {
-        final CraftPlayer craftplayer = (CraftPlayer) event.getPlayer();
-
-        craftplayer.getHandle().networkManager.channel.pipeline()
-                .addBefore("packet_handler", craftplayer.getName(), new CustomHandler(craftplayer.getUniqueId()));
+        ((CraftPlayer) event.getPlayer()).getHandle().networkManager.channel.pipeline()
+                .addBefore("packet_handler", "latency-plugin", new CustomHandler(event.getPlayer().getUniqueId()));
     }
 
     @EventHandler
