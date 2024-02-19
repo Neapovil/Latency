@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_19_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,17 +14,12 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.electronwill.nightconfig.core.file.FileConfig;
-
 import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.EntitySelector;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.minecraft.network.protocol.game.ClientboundKeepAlivePacket;
 import net.minecraft.network.protocol.game.ServerboundKeepAlivePacket;
 
@@ -32,50 +27,44 @@ public final class Latency extends JavaPlugin implements Listener
 {
     private static Latency instance;
     private final Map<UUID, Long> latencies = new HashMap<>();
-    private FileConfig messages;
-    private final MiniMessage miniMessage = MiniMessage.miniMessage();
 
     @Override
     public void onEnable()
     {
         instance = this;
 
-        this.saveResource("messages.json", false);
-
-        this.messages = FileConfig.builder(this.getDataFolder().toPath().resolve("messages.json"))
-                .autoreload()
-                .autosave()
-                .build();
-
-        this.messages.load();
-
         this.getServer().getPluginManager().registerEvents(this, this);
 
         new CommandAPICommand("latency")
                 .withPermission("latency.command.self")
                 .executesPlayer((player, args) -> {
-                    final long ms = this.latencies.getOrDefault(player.getUniqueId(), 0L);
-                    final String message = this.messages.get("messages.self");
-                    final Component component = this.miniMessage.deserialize(message, Placeholder.parsed("ms", "" + ms));
-
-                    player.sendMessage(component);
+                    final long ping = this.latencies.getOrDefault(player.getUniqueId(), 0L);
+                    player.sendMessage(Component.text("Ping: %sms".formatted(ping)));
                 })
                 .register();
 
         new CommandAPICommand("latency")
-                .withPermission("latency.command.self")
-                .withArguments(new EntitySelectorArgument<Player>("player", EntitySelector.ONE_PLAYER).withPermission("latency.command.other"))
+                .withPermission("latency.command.other")
+                .withArguments(new EntitySelectorArgument.OnePlayer("player"))
                 .executes((sender, args) -> {
-                    final Player target = (Player) args[0];
-
-                    final String message = this.messages.get("messages.other");
-                    final long ms = this.latencies.getOrDefault(target.getUniqueId(), 0L);
-                    final Component component = this.miniMessage.deserialize(message, Placeholder.parsed("player_name", target.getName()),
-                            Placeholder.parsed("ms", "" + ms));
-
-                    sender.sendMessage(component);
+                    final Player player = (Player) args.get(0);
+                    final long ping = this.latencies.getOrDefault(player.getUniqueId(), 0L);
+                    sender.sendMessage(Component.text("%s's ping: %sms".formatted(player.getName(), ping)));
                 })
                 .register();
+    }
+
+    @EventHandler
+    private void onPlayerJoin(PlayerJoinEvent event)
+    {
+        ((CraftPlayer) event.getPlayer()).getHandle().connection.connection.channel.pipeline()
+                .addBefore("packet_handler", "latency-plugin", new CustomHandler(event.getPlayer().getUniqueId()));
+    }
+
+    @EventHandler
+    private void onPlayerQuit(PlayerQuitEvent event)
+    {
+        this.latencies.remove(event.getPlayer().getUniqueId());
     }
 
     @Override
@@ -83,27 +72,9 @@ public final class Latency extends JavaPlugin implements Listener
     {
     }
 
-    public static Latency getInstance()
+    public static Latency instance()
     {
         return instance;
-    }
-
-    public long getPlayerLatency(UUID uuid)
-    {
-        return this.latencies.getOrDefault(uuid, 0L);
-    }
-
-    @EventHandler
-    private void playerJoin(PlayerJoinEvent event)
-    {
-        ((CraftPlayer) event.getPlayer()).getHandle().networkManager.channel.pipeline()
-                .addBefore("packet_handler", "latency-plugin", new CustomHandler(event.getPlayer().getUniqueId()));
-    }
-
-    @EventHandler
-    private void playerQuit(PlayerQuitEvent event)
-    {
-        this.latencies.remove(event.getPlayer().getUniqueId());
     }
 
     class CustomHandler extends ChannelDuplexHandler

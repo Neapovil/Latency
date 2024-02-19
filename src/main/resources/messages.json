@@ -1,6 +1,0 @@
-{
-  "messages": {
-    "self": "Ping: <ms>ms",
-    "other": "<player_name>'s ping: <ms>ms"
-  }
-}
