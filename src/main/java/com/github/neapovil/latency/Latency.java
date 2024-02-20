@@ -53,6 +53,11 @@ public final class Latency extends JavaPlugin implements Listener
                 })
                 .register();
     }
+    
+    @Override
+    public void onDisable()
+    {
+    }
 
     @EventHandler
     private void onPlayerJoin(PlayerJoinEvent event)
@@ -65,11 +70,6 @@ public final class Latency extends JavaPlugin implements Listener
     private void onPlayerQuit(PlayerQuitEvent event)
     {
         this.latencies.remove(event.getPlayer().getUniqueId());
-    }
-
-    @Override
-    public void onDisable()
-    {
     }
 
     public static Latency instance()
